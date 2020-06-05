@@ -1,20 +1,61 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Feather as Icon } from '@expo/vector-icons'
 import { View, Image, StyleSheet, Text, ImageBackground, KeyboardAvoidingView, Platform } from 'react-native'
 import { RectButton, TextInput } from 'react-native-gesture-handler'
 import { useNavigation } from '@react-navigation/native'
+import axios from 'axios'
+import RNPickerSelect from 'react-native-picker-select';
+
+interface IBGEUFResponse {
+  sigla: string
+}
+
+interface IBGECityResponse {
+  nome: string
+}
 
 const Home = () => {
   const navigation = useNavigation()
 
-  const [uf, setUf] = useState('')
-  const [city, setCity] = useState('')
+  const [ufs, setUfs] = useState<string[]>([])
+  const [cities, setCities] = useState<string[]>([])
+
+  const [selectedUf, setSelectedUf] = useState('0')
+  const [selectedCity, setSelectedCity] = useState('0')
+
+  useEffect(() => {
+    axios.get<IBGEUFResponse[]>('https://servicodados.ibge.gov.br/api/v1/localidades/estados').then(res => {
+      const ufInitials = res.data.map(uf => uf.sigla)
+      setUfs(ufInitials)
+    })
+  }, [])
+
+  useEffect(() => {
+    if (selectedUf === '0') {
+      return;
+    }
+
+    axios
+      .get<IBGECityResponse[]>(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${selectedUf}/municipios`)
+      .then(res => {
+        const cityNames = res.data.map(city => city.nome)
+        setCities(cityNames)
+      })
+  }, [selectedUf])
 
   function handleNavigateToPoints() {
     navigation.navigate('Points', {
-      uf,
-      city
+      selectedUf,
+      selectedCity
     })
+  }
+
+  function handleSelectUf(value: string) {
+    setSelectedUf(value)
+  }
+
+  function handleSelectCity(value: string) {
+    setSelectedCity(value)
   }
 
   return (
@@ -31,22 +72,22 @@ const Home = () => {
           </View>
         </View>
 
-        <View style={styles.footer}>
-          <TextInput
-            style={styles.input}
-            placeholder='Digite a UF'
-            value={uf}
-            maxLength={2}
-            autoCapitalize='characters'
-            autoCorrect={false}
-            onChangeText={setUf}></TextInput>
-          <TextInput
-            style={styles.input}
-            placeholder='Digite a Cidade'
-            value={city}
-            autoCapitalize='words'
-            autoCorrect={false}
-            onChangeText={setCity}></TextInput>
+        <View style={styles.footer}> 
+        <RNPickerSelect
+            style={pickerSelectStyles}
+            placeholder={{label: "Selecione um Estado"}}
+            onValueChange={(value) => { handleSelectUf(value) }}
+            items={ufs.sort().map(uf => {
+              return { label: uf, value: uf, key: uf}
+            })} />
+
+          <RNPickerSelect
+            style={pickerSelectStyles}
+            placeholder={{label: "Selecione uma Cidade"}}
+            onValueChange={(value) => { handleSelectCity(value) }}
+            items={cities.sort().map((city) => {
+              return {label: city, value: city, key: city}
+            })}/>
 
           <RectButton style={styles.button} onPress={handleNavigateToPoints}>
             <View style={styles.buttonIcon}>
@@ -106,6 +147,7 @@ const styles = StyleSheet.create({
     height: 60,
     flexDirection: 'row',
     borderRadius: 10,
+    shadowRadius: 10,
     overflow: 'hidden',
     alignItems: 'center',
     marginTop: 8,
@@ -127,6 +169,27 @@ const styles = StyleSheet.create({
     fontFamily: 'Roboto_500Medium',
     fontSize: 16,
   }
+});
+
+const pickerSelectStyles = StyleSheet.create({
+  inputIOS: {
+    height: 60,
+    backgroundColor: '#FFF',
+    borderRadius: 10,
+    marginBottom: 16,
+    paddingHorizontal: 24,
+    color: "#000",
+    fontSize: 16, // to ensure the text is never behind the icon
+  },
+  inputAndroid: {
+    height: 60,
+    backgroundColor: '#FFF',
+    borderRadius: 10,
+    marginBottom: 16,
+    paddingHorizontal: 24,
+    color: "#000",
+    fontSize: 16,// to ensure the text is never behind the icon
+  },
 });
 
 export default Home
