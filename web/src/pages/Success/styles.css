@@ -1,0 +1,23 @@
+
+  #page-success {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    display: flex;
+    background-color: rgb(22, 22, 22);
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .icon{
+      height: 120px;
+      width: 120px;
+      color: var(--primary-color);
+  }
+
+  h1 {
+    color: blanchedalmond;
+    font-size: 50px;
+    margin-top: 50px;
+  }
